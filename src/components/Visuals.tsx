@@ -2,6 +2,7 @@ import { useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { fa, faGroup, usePrefersReducedMotion } from "../lib/hooks";
 import { BfsDfs, DpTable, LruCache, OnionArch, Quorum, SeqDiagram, TlsHandshake } from "./Visuals2";
 import { AbTestCalc, MktFunnel } from "./Visuals3";
+import { SqlJoin, ReactLifecycle, AsyncFlow, NumberConverter, CiCdPipeline, BTreeIndex, ObserverPattern, RateLimiter, HashVsEncrypt } from "./Visuals4";
 
 /* ---------- قاب مشترک ---------- */
 function Frame({ title, hint, children }: { title: string; hint?: string; children: ReactNode }) {
@@ -1779,6 +1780,15 @@ const REGISTRY: Record<string, () => ReactNode> = {
   onionArch: () => <OnionArch />,
   mktFunnel: () => <MktFunnel />,
   abTestCalc: () => <AbTestCalc />,
+  sqlJoin: () => <SqlJoin />,
+  reactLifecycle: () => <ReactLifecycle />,
+  asyncFlow: () => <AsyncFlow />,
+  numberConverter: () => <NumberConverter />,
+  ciCdPipeline: () => <CiCdPipeline />,
+  bTreeIndex: () => <BTreeIndex />,
+  observerPattern: () => <ObserverPattern />,
+  rateLimiter: () => <RateLimiter />,
+  hashVsEncrypt: () => <HashVsEncrypt />,
 };
 
 /* ---------- حلقه وایب کدینگ ---------- */

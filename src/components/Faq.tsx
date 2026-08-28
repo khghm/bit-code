@@ -1,10 +1,16 @@
-import { useState } from "react";
-import { faqs } from "../lib/data";
-import { Reveal } from "../lib/hooks";
-import { IconTerminal } from "./Icons";
-import { SectionHead } from "./Shared";
+import { useState } from 'react';
+import type { Database } from '../types/database';
+import { Reveal } from '../lib/hooks';
+import { IconTerminal } from './Icons';
+import { SectionHead } from './Shared';
 
-export default function Faq() {
+type Faq = Database['public']['Tables']['faqs']['Row'];
+
+interface FaqProps {
+  faqs: Faq[];
+}
+
+export default function Faq({ faqs }: FaqProps) {
   const [open, setOpen] = useState(0);
 
   return (
@@ -42,18 +48,18 @@ export default function Faq() {
               {faqs.map((f, i) => {
                 const isOpen = open === i;
                 return (
-                  <Reveal key={f.q} delay={i * 60}>
-                    <div className={`border rounded-md transition-colors duration-300 ${isOpen ? "border-teal/50 bg-night-900/90" : "border-linec bg-night-900/60 hover:border-mist/25"}`}>
+                  <Reveal key={f.id} delay={i * 60}>
+                    <div className={`border rounded-md transition-colors duration-300 ${isOpen ? 'border-teal/50 bg-night-900/90' : 'border-linec bg-night-900/60 hover:border-mist/25'}`}>
                       <button onClick={() => setOpen(isOpen ? -1 : i)} className="w-full flex items-center gap-4 p-5 text-right" aria-expanded={isOpen}>
-                        <span className="font-code text-xs text-faint w-6 shrink-0">{String(i + 1).padStart(2, "0")}</span>
-                        <span className={`flex-1 font-bold text-[15px] transition-colors ${isOpen ? "text-teal" : "text-mist"}`}>{f.q}</span>
-                        <span className={`shrink-0 transition-transform duration-300 ${isOpen ? "rotate-180 text-teal" : "text-faint"}`}>
+                        <span className="font-code text-xs text-faint w-6 shrink-0">{String(i + 1).padStart(2, '0')}</span>
+                        <span className={`flex-1 font-bold text-[15px] transition-colors ${isOpen ? 'text-teal' : 'text-mist'}`}>{f.question}</span>
+                        <span className={`shrink-0 transition-transform duration-300 ${isOpen ? 'rotate-180 text-teal' : 'text-faint'}`}>
                           <svg viewBox="0 0 24 24" className="w-5 h-5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6" /></svg>
                         </span>
                       </button>
-                      <div className={`acc-panel ${isOpen ? "open" : ""}`}>
+                      <div className={`acc-panel ${isOpen ? 'open' : ''}`}>
                         <div>
-                          <p className="px-5 pb-5 pl-12 text-sm text-dim leading-8">{f.a}</p>
+                          <p className="px-5 pb-5 pl-12 text-sm text-dim leading-8">{f.answer}</p>
                         </div>
                       </div>
                     </div>

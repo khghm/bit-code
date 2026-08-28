@@ -1,41 +1,50 @@
-import { useMemo, useState } from "react";
-import { categories, courses, type CatId, type Hue } from "../lib/data";
-import { COURSE_CONTENT } from "../lib/content-index";
-import { Reveal, fa, faGroup } from "../lib/hooks";
-import { CatIcon, IconCheck, IconClock, IconPlay, IconSearch, IconSession, IconSpark, IconUsers } from "./Icons";
-import { HUES, LevelBar, SectionHead, Stars } from "./Shared";
+import { useMemo, useState } from 'react';
+import { Link } from 'react-router-dom';
+import type { Database } from '../types/database';
+import { Reveal, fa, faGroup } from '../lib/hooks';
+import { CatIcon, IconCheck, IconClock, IconPlay, IconSearch, IconSession, IconSpark, IconUsers } from './Icons';
+import { HUES, LevelBar, SectionHead, Stars } from './Shared';
+
+type Course = Database['public']['Tables']['courses']['Row'];
+type Category = Database['public']['Tables']['categories']['Row'];
+type Hue = 'amber' | 'teal' | 'cyan' | 'coral';
+type Level = 'مقدماتی' | 'متوسط' | 'پیشرفته';
 
 const HUE_HOVER: Record<Hue, { card: string; title: string }> = {
-  amber: { card: "hover:border-amber/50", title: "group-hover:text-amber" },
-  teal: { card: "hover:border-teal/50", title: "group-hover:text-teal" },
-  cyan: { card: "hover:border-cyan/50", title: "group-hover:text-cyan" },
-  coral: { card: "hover:border-coral/50", title: "group-hover:text-coral" },
+  amber: { card: 'hover:border-amber/50', title: 'group-hover:text-amber' },
+  teal: { card: 'hover:border-teal/50', title: 'group-hover:text-teal' },
+  cyan: { card: 'hover:border-cyan/50', title: 'group-hover:text-cyan' },
+  coral: { card: 'hover:border-coral/50', title: 'group-hover:text-coral' },
 };
 
-const catLabel = (id: CatId) => categories.find((c) => c.id === id)?.label ?? "";
+interface CoursesProps {
+  courses: Course[];
+  categories?: Category[];
+  enrolledCourseIds?: Set<string>;
+  onToggleEnroll?: (id: string) => void;
+  onAuthRequired?: () => void;
+}
 
 export default function Courses({
-  enrolled,
+  courses,
+  categories = [],
+  enrolledCourseIds = new Set(),
   onToggleEnroll,
-  onOpen,
-  progress,
-}: {
-  enrolled: Set<string>;
-  onToggleEnroll: (id: string) => void;
-  onOpen: (id: string) => void;
-  progress: Record<string, string[]>;
-}) {
-  const [cat, setCat] = useState<CatId | "all">("all");
-  const [query, setQuery] = useState("");
+  onAuthRequired,
+}: CoursesProps) {
+  const [cat, setCat] = useState<string>('all');
+  const [query, setQuery] = useState('');
 
   const filtered = useMemo(() => {
     const q = query.trim();
     return courses.filter((c) => {
-      if (cat !== "all" && c.cat !== cat) return false;
+      if (cat !== 'all' && c.cat !== cat) return false;
       if (!q) return true;
-      return `${c.title} ${c.skills.join(" ")} ${c.instructor}`.includes(q);
+      return `${c.title} ${c.skills.join(' ')} ${c.instructor}`.includes(q);
     });
-  }, [cat, query]);
+  }, [cat, query, courses]);
+
+  const catLabel = (id: string) => categories.find((c) => c.id === id)?.label ?? '';
 
   return (
     <section id="courses" className="max-w-7xl mx-auto px-4 py-24">
@@ -50,8 +59,8 @@ export default function Courses({
           <div className="flex items-center gap-2 text-sm text-dim border border-linec rounded-md px-4 py-3 bg-night-900/60">
             <span className="w-2 h-2 rounded-full bg-amber glow-pulse" />
             <span>
-              {enrolled.size > 0 ? (
-                <>دوره‌های انتخابی شما: <b className="text-amber">{fa(enrolled.size)}</b></>
+              {enrolledCourseIds.size > 0 ? (
+                <>دوره‌های انتخابی شما: <b className="text-amber">{fa(enrolledCourseIds.size)}</b></>
               ) : (
                 <>هنوز دوره‌ای انتخاب نکرده‌ای</>
               )}
@@ -60,25 +69,37 @@ export default function Courses({
         </Reveal>
       </div>
 
-      {/* فیلترها */}
       <Reveal delay={100}>
         <div className="flex flex-col lg:flex-row lg:items-center gap-4 mt-10">
           <div className="flex flex-wrap gap-2">
+            <button
+              onClick={() => setCat('all')}
+              className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm transition-all duration-300 border ${
+                cat === 'all'
+                  ? 'bg-amber text-night-900 border-amber font-bold shadow-[0_6px_20px_rgba(255,180,84,0.25)]'
+                  : 'border-linec text-dim hover:border-amber/40 hover:text-mist'
+              }`}
+            >
+              همه دوره‌ها
+              <span className={`font-code text-[10px] px-1.5 py-0.5 rounded ${cat === 'all' ? 'bg-night-900/15 text-night-900' : 'bg-night-800 text-faint'}`}>
+                {fa(courses.length)}
+              </span>
+            </button>
             {categories.map((c) => {
               const active = cat === c.id;
-              const count = c.id === "all" ? courses.length : courses.filter((x) => x.cat === c.id).length;
+              const count = courses.filter((x) => x.cat === c.id).length;
               return (
                 <button
                   key={c.id}
                   onClick={() => setCat(c.id)}
                   className={`flex items-center gap-2 rounded-md px-4 py-2 text-sm transition-all duration-300 border ${
                     active
-                      ? "bg-amber text-night-900 border-amber font-bold shadow-[0_6px_20px_rgba(255,180,84,0.25)]"
-                      : "border-linec text-dim hover:border-amber/40 hover:text-mist"
+                      ? 'bg-amber text-night-900 border-amber font-bold shadow-[0_6px_20px_rgba(255,180,84,0.25)]'
+                      : 'border-linec text-dim hover:border-amber/40 hover:text-mist'
                   }`}
                 >
                   {c.label}
-                  <span className={`font-code text-[10px] px-1.5 py-0.5 rounded ${active ? "bg-night-900/15 text-night-900" : "bg-night-800 text-faint"}`}>
+                  <span className={`font-code text-[10px] px-1.5 py-0.5 rounded ${active ? 'bg-night-900/15 text-night-900' : 'bg-night-800 text-faint'}`}>
                     {fa(count)}
                   </span>
                 </button>
@@ -100,29 +121,20 @@ export default function Courses({
         </div>
       </Reveal>
 
-      {/* نتیجه */}
       <p className="text-xs text-faint mt-5 font-code">
         {faGroup(filtered.length)} دوره پیدا شد {query.trim() && <>برای «{query.trim()}»</>}
       </p>
 
-      {/* کارت‌ها */}
       {filtered.length > 0 ? (
         <div className="grid sm:grid-cols-2 xl:grid-cols-3 gap-5 mt-6">
           {filtered.map((c, i) => {
-            const hue = HUES[c.hue];
-            const isEnrolled = enrolled.has(c.id);
-            const prog = progress[c.id] ?? [];
-            const progTotal = COURSE_CONTENT[c.id]?.lessons.length ?? 0;
-            const progCount = progTotal > 0 ? Math.min(prog.length, progTotal) : 0;
+            const hue = HUES[c.hue as Hue];
+            const isEnrolled = enrolledCourseIds.has(c.id);
             return (
               <Reveal key={c.id} delay={(i % 3) * 90}>
                 <article
-  onClick={() => onOpen(c.id)}
-  role="button"
-  tabIndex={0}
-  onKeyDown={(e) => { if (e.key === "Enter") onOpen(c.id); }}
-  className={`group corners h-full flex flex-col border border-linec bg-night-900/70 rounded-md p-5 transition-all duration-300 cursor-pointer hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(2,8,16,0.5)] ${HUE_HOVER[c.hue].card}`}
->
+                  className={`group corners h-full flex flex-col border border-linec bg-night-900/70 rounded-md p-5 transition-all duration-300 hover:-translate-y-1.5 hover:shadow-[0_20px_50px_rgba(2,8,16,0.5)] ${HUE_HOVER[c.hue as Hue].card}`}
+                >
                   <div className="flex items-center justify-between">
                     <span className={`inline-flex items-center gap-2 text-[11px] font-semibold border rounded px-2.5 py-1 ${hue.chip}`}>
                       <CatIcon k={c.cat} className="w-3.5 h-3.5" />
@@ -134,19 +146,19 @@ export default function Courses({
                         پرطرفدار
                       </span>
                     ) : (
-                      <span className={`inline-flex items-center gap-1.5 text-[11px] text-dim`}>
-                        <LevelBar level={c.level} />
+                      <span className="inline-flex items-center gap-1.5 text-[11px] text-dim">
+                        <LevelBar level={c.level as Level} />
                         {c.level}
                       </span>
                     )}
                   </div>
 
-                  <h3
-  onClick={() => onOpen(c.id)}
-  className={`font-display text-[22px] leading-9 mt-4 text-mist transition-colors cursor-pointer ${HUE_HOVER[c.hue].title}`}
->
-  {c.title}
-</h3>
+                  <Link
+                    to={`/course/${c.id}`}
+                    className={`font-display text-[22px] leading-9 mt-4 text-mist transition-colors ${HUE_HOVER[c.hue as Hue].title}`}
+                  >
+                    {c.title}
+                  </Link>
                   <p className="text-xs text-faint mt-1">{c.instructor}</p>
 
                   <div className="flex flex-wrap gap-1.5 mt-3">
@@ -163,20 +175,6 @@ export default function Courses({
                   </div>
 
                   <div className="mt-auto pt-5 border-t border-linec/70">
-                    {progTotal > 0 && progCount > 0 && (
-                      <div className="mb-4">
-                        <div className="flex justify-between text-[11px] text-faint mb-1.5">
-                          <span>{progCount === progTotal ? "دوره تمام شد! 🎉" : "پیشرفت شما در این دوره"}</span>
-                          <span className="font-code">{fa(progCount)}/{fa(progTotal)} درس</span>
-                        </div>
-                        <div className="h-1.5 bg-night-700 rounded-full overflow-hidden">
-                          <div
-                            className={`h-full rounded-full transition-all duration-700 ${progCount === progTotal ? "bg-teal" : "bg-amber"}`}
-                            style={{ width: `${Math.max(6, (progCount / progTotal) * 100)}%` }}
-                          />
-                        </div>
-                      </div>
-                    )}
                     <div className="flex items-center justify-between gap-2">
                       {c.price === 0 ? (
                         <span className="font-bold text-teal">رایگان</span>
@@ -187,22 +185,33 @@ export default function Courses({
                         </span>
                       )}
                       <div className="flex items-center gap-2">
-<button
-  onClick={(e) => { e.stopPropagation(); onOpen(c.id); }}
-  className={`group flex items-center gap-1.5 text-sm font-semibold rounded-md px-3.5 py-2 transition-all duration-300 border ${hue.chip} hover:-translate-y-0.5`}
->                          <IconPlay className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
-                          مشاهده محتوا
-                        </button>
-<button
-  onClick={(e) => { e.stopPropagation(); onToggleEnroll(c.id); }}
-  className={`flex items-center gap-1.5 text-sm font-semibold rounded-md px-4 py-2 transition-all duration-300 border ${                            isEnrolled
-                              ? "bg-teal/10 text-teal border-teal/40"
-                              : "border-linec text-dim hover:bg-amber hover:text-night-900 hover:border-amber hover:font-bold"
-                          }`}
+                        <Link
+                          to={`/course/${c.id}`}
+                          className={`group flex items-center gap-1.5 text-sm font-semibold rounded-md px-3.5 py-2 transition-all duration-300 border ${hue.chip} hover:-translate-y-0.5`}
                         >
-                          {isEnrolled && <IconCheck className="w-4 h-4" />}
-                          {isEnrolled ? "ثبت شدی!" : "ثبت‌نام"}
-                        </button>
+                          <IconPlay className="w-3.5 h-3.5 transition-transform group-hover:scale-110" />
+                          مشاهده محتوا
+                        </Link>
+                        {onToggleEnroll && (
+                          <button
+                            onClick={(e) => {
+                              e.preventDefault();
+                              if (!isEnrolled && onAuthRequired) {
+                                onAuthRequired();
+                              } else {
+                                onToggleEnroll(c.id);
+                              }
+                            }}
+                            className={`flex items-center gap-1.5 text-sm font-semibold rounded-md px-4 py-2 transition-all duration-300 border ${
+                              isEnrolled
+                                ? 'bg-teal/10 text-teal border-teal/40'
+                                : 'border-linec text-dim hover:bg-amber hover:text-night-900 hover:border-amber hover:font-bold'
+                            }`}
+                          >
+                            {isEnrolled && <IconCheck className="w-4 h-4" />}
+                            {isEnrolled ? 'ثبت شدی!' : 'ثبت‌نام'}
+                          </button>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -216,7 +225,7 @@ export default function Courses({
           <p className="font-display text-2xl text-dim">چیزی پیدا نشد!</p>
           <p className="text-sm text-faint mt-2">عبارت دیگری را امتحان کن یا فیلترها را پاک کن.</p>
           <button
-            onClick={() => { setQuery(""); setCat("all"); }}
+            onClick={() => { setQuery(''); setCat('all'); }}
             className="mt-5 text-sm text-amber border border-amber/40 rounded-md px-5 py-2 hover:bg-amber hover:text-night-900 transition-colors"
           >
             پاک‌کردن فیلترها
